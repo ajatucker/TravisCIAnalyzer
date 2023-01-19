@@ -20,6 +20,15 @@ public class TravisReportGenerator {
 	//private int count;
 	@SuppressWarnings("unused")
 	private Map<String, Integer> commandMap;
+	
+	public void getCommandMap()
+	{
+		System.out.println("This is the map:");
+		for(Map.Entry<String, Integer> entry : commandMap.entrySet())
+		{
+			System.out.println(entry.getKey() + " : " + entry.getValue());
+		}
+	}
 	public TravisReportGenerator()
 	{
 		commandMap = new HashMap<String, Integer>();
