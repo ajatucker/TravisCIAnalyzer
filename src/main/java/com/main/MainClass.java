@@ -1,7 +1,9 @@
 package com.main;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -24,6 +26,7 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
 
@@ -45,6 +48,7 @@ import com.github.gumtreediff.matchers.Matcher;
 import com.github.gumtreediff.matchers.Matchers;
 import com.github.gumtreediff.tree.ITree;
 import com.github.gumtreediff.tree.TreeUtils;
+import com.opencsv.CSVReader;
 import com.travis.parser.BashCmdAnalysis;
 import com.travis.parser.CmdClustering;
 import com.travis.parser.CommandFrequency;
@@ -384,8 +388,47 @@ public class MainClass {
 
 		} else if (inputid == 13) {
 			//dump travis files to temp folder pre/post commit
-				TravisCIFileDownloader dwnloader = new TravisCIFileDownloader();
-				dwnloader.downloadBeforeAndAfterCommitFiles();
+			
+			//read csv file
+			List<List<String>> records = new ArrayList<List<String>>();
+			try(CSVReader csvReader = new CSVReader(new FileReader(Config.csvCITransitionFile))){
+			    String[] values = null;
+			    while ((values = csvReader.readNext()) != null) {
+			        records.add(Arrays.asList(values));
+			    }
+			} catch (FileNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+
+			//repeat for every line
+			for(List<String> rec:records) {
+				String projectName = rec.get(1); //column contains projectname
+				String commitIdAsString = rec.get(2); //column containing commit
+				String projectPath=projectName.replace('/', '-');
+				//in my local machine i cloned every project to the directory owner-projectName that might not be the case for you
+				String pathOfGitFile= "/home/alaa/alexis-project/CloneWithGetPy/travisData/clonedProjects/"+ projectPath+"/.git";
+				//repositoryBuilder.get
+				try {
+					Git git = Git.open(new File(pathOfGitFile));
+					Repository repo = git.getRepository();
+					
+					//create a revision walk iterator that will help us traverse the list of commits
+					RevWalk walk = new RevWalk(repo);
+					ObjectId commitId = ObjectId.fromString(commitIdAsString);
+					RevCommit commit = walk.parseCommit(commitId);
+					//create a tree walk object to help us iterate through the files at the commit
+					
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+				
 				//FileOutputStream of = new FileOutputStream(Config.rootDir+".old_travis.yml");
 			/*
 	          Repository repository = git.getRepository();
