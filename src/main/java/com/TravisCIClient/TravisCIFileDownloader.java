@@ -106,7 +106,7 @@ public class TravisCIFileDownloader {
 		try {
 			String localrepo = Config.rootDir + repourl; 
 			String localfolder = Config.travisRepoDir + repourl;
-			localfolder = localfolder.replace('/', '\\');
+			//localfolder = localfolder.replace('/', '\\');
 			//this one gets repo name as input
 			repo = github.getRepository(repourl); //getting lost here??
 

@@ -10,7 +10,7 @@ public class Config {
 	 //public static String
 	 //rootDir=".\\Project_Data";
 	 public static String
-	 rootDir="/home/alaa/alexis-project/TravisCIAnalyzer/";
+	 rootDir="C:\\Users\\ogime\\Desktop\\ML-DevOps-Research\\Project_Repo\\";
 	 //
 	 //text file that contains list of projects to analyze
 	 public static String gitProjList=rootDir+"Project_Source_NonML.txt";
@@ -23,7 +23,7 @@ public class Config {
 	 public static String repoDirEval= rootDir+"EvalRepos/"; /*rootDir+"GitRepo/";*/	 
 	 public static String repoDir = rootDir+"GitRepo/";
 	 
-	 public static String travisRepoDir = "/home/alaa/alexis-project/CloneWithGetPy/travisData";
+	 public static String travisRepoDir = "D:\\ClonedRepos";
 	
 	 public static String csvFile=rootDir+"perf_commit_data_Updated.csv";
 	 
@@ -32,7 +32,7 @@ public class Config {
 	 public static String csvCmdTypeFile=rootDir+"command_type_new_ML_Non_Ml.csv";
 	 
 	 //public static String csvCITransitionFile=rootDir+"Tool_transition.csv";
-	 public static String csvCITransitionFile="/home/alaa/alexis-project/CloneWithGetPy/travisData/ML.csv";
+	 public static String csvCITransitionFile="C:\\Users\\ogime\\Desktop\\ML-DevOps-Research\\Project_Repo\\ML.csv";
 	 
 	 public static String csvBlockCategory=Config.rootDir+"block_type.csv";
 			 
