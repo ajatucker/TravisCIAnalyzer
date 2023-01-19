@@ -2,6 +2,9 @@ package com.travisdiff;
 
 import com.opencsv.bean.CsvBindByName;
 
+
+//This class is different from the TravisCommitInfo class as that is for a different data set
+//The TravisCommits class is for generating the report of how Travis CI/CD pipelines are evolving
 public class TravisCommits {
 	@CsvBindByName(column = "CommitID", required = true)	
 	private String commitid;

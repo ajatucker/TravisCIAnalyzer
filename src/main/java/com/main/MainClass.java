@@ -64,6 +64,7 @@ import com.unity.entity.CommandType;
 import com.unity.entity.EvaluationProject;
 import com.unity.entity.PerfFixData;
 import com.unity.repodownloader.ProjectLoader;
+import com.utility.TravisReportGenerator;
 
 import edu.util.fileprocess.CSVReaderWriter;
 import edu.util.fileprocess.CVSReader;
@@ -385,82 +386,12 @@ public class MainClass {
 		} else if (inputid == 13) {
 			//dump travis files to temp folder pre/post commit
 			
-				TravisCIFileDownloader dwnloader = new TravisCIFileDownloader();
-				dwnloader.downloadBeforeAndAfterCommitFiles();
-				//FileOutputStream of = new FileOutputStream(Config.rootDir+".old_travis.yml");
-			/*
-	          Repository repository = git.getRepository();
-	          RevWalk walk = new RevWalk(repository);
-	          ObjectId commitId = ObjectId.fromString("b3ae91c7e89644a73b9e9e44391d034bf746342f");
-	          RevCommit commit = walk.parseCommit(commitId);
-	          //System.out.println(commit);
-	          TreeWalk treeWalk = new TreeWalk(repository); //TreeWalk.forPath(git.getRepository(), path, commit.getTree()));//
-	          //treeWalk.addTree(commit.getTree());
-	          treeWalk.setFilter(PathFilter.create(".travis.yml"));
-	          ObjectId blobId = commit.getTree().getId();
-	          ObjectReader objectReader = repository.newObjectReader();
-	          ObjectLoader objectLoader = objectReader.open(blobId);
-	          byte[] bytes = objectLoader.getBytes();
-	          String content = new String(bytes, "utf-8");
-	          System.out.println(content);
-	          */
-	          //objectLoader.copyTo(of);
-	          
-	          //of.close();
-	          //byte[] bytes = objectLoader.getBytes();
-	          //String contents = new String(bytes, StandardCharsets.UTF_8);
-	          //System.out.println(contents);
-	          //System.out.println(commit);
-	          /*RevTree tree = commit.getTree();
-	          
-	           * TreeWalk treewalk = new TreeWalk(repository);
-	          treewalk.addTree(tree);
-	          treewalk.setRecursive(true);
-	          treewalk.setFilter(PathFilter.create(".travis.yml"));
-	          ObjectId objectId = treewalk.getObjectId(0);
-	          ObjectLoader loader = repository.open(objectId);
-	          String content = new String(loader.getBytes().toString());
-	          System.out.println("This is working so far");
-	          System.out.println(content);
-	          */
-	          //System.out.println("No issues");
+			TravisCIFileDownloader dwnloader = new TravisCIFileDownloader();
+			dwnloader.downloadBeforeAndAfterCommitFiles();
 	   
+			TravisReportGenerator generate = new TravisReportGenerator();
+			generate.compareFiles("b3ae91c7e89644a73b9e9e44391d034bf746342f.yml", "prevb3ae91c7e89644a73b9e9e44391d034bf746342f.yml");
 			
-			TravisCITree travistree = new TravisCITree();
-			ITree prevtree = travistree
-					.getTravisCITree(Config.rootDir+".travis_robot-surgery1.yml");
-			ITree curtree = travistree
-					.getTravisCITree(Config.rootDir+".travis_robot-surgery2.yml");
-			
-			//keep a map, count of lifecycle of travis then generate a report of all data
-
-//			 Matcher m = Matchers.getInstance().getMatcher();
-//			 MappingStore mappings = m.match(prevtree, curtree);
-//
-//			 EditScriptGenerator editScriptGenerator = new SimplifiedChawatheScriptGenerator();
-//			 EditScript actions = editScriptGenerator.computeActions(mappings);
-//			 
-//			 System.out.println("test");
-
-			Matcher defaultMatcher = Matchers.getInstance().getMatcher(); // retrieves the default matcher
-			MappingStore mappings = defaultMatcher.match(prevtree, curtree); // computes the mappings between the trees
-			EditScriptGenerator editScriptGenerator = new SimplifiedChawatheScriptGenerator(); // instantiates the
-																								// simplified Chawathe
-																								// script generator
-			EditScript actions = editScriptGenerator.computeActions(mappings); // computes the edit script
-
-			System.out.println("Pre-print test");
-
-			DecorateJSonTree decojson = new DecorateJSonTree();
-
-			for (Action action : actions) {
-				String strfield = decojson.getJsonField(action);
-				strfield = strfield.replaceAll("\"", "");
-				System.out.println(strfield);
-				action.getNode().setMetadata("json_parent", strfield);
-			}
-
-			System.out.println("Post-print new test");
 		}
 
 	}

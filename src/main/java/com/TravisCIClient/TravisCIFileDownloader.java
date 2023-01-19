@@ -95,9 +95,9 @@ public class TravisCIFileDownloader {
 		}
 	}
 	
-	private void downloadPrevAndCurrTravisFiles(String repourl,String prevcmt, String passcmt) {
+	private void downloadPrevAndCurrTravisFiles(String repourl, String passcmt) {
 		GHRepository repo;
-		//String prevcmt = "prev_travis_"+passcmt;
+		String prevcmt = "prev"+passcmt;
 		//String reponame = ProjectPropertyAnalyzer.getProjRepoName(repourl);
 		//String localfolder = ProjectPropertyAnalyzer.getProjName(repourl);
 		String passcmtstr = null;
@@ -105,7 +105,7 @@ public class TravisCIFileDownloader {
 		CommitAnalyzingUtils commitAnalyzingUtils = new CommitAnalyzingUtils();
 		try {
 			String localrepo = Config.rootDir + repourl; 
-			String localfolder = Config.travisRepoDir + repourl;
+			String localfolder = Config.rootDir + "temp";
 			//localfolder = localfolder.replace('/', '\\');
 			//this one gets repo name as input
 			repo = github.getRepository(repourl); //getting lost here??
@@ -115,7 +115,7 @@ public class TravisCIFileDownloader {
 
 			//String localrepo = Config.rootDir + repourl;
 			
-			  String strprevfile = localrepo + "/" + prevcmt + ".yml"; 
+			  String strprevfile = localfolder + "/" + prevcmt + ".yml"; 
 			  List<GHCommit> prevcommit = passcommit.getParents();
 			  //if(prevcommit != null) { 
 			  GHTree prevtree = prevcommit.get(0).getTree();
@@ -155,7 +155,7 @@ public class TravisCIFileDownloader {
 
 			//String localrepo = Config.rootDir + repourl;
 			//String strprevfile = localrepo + "/" + prevcmt + ".yml";
-			String strpassfile = localrepo + "/" + passcmt + ".yml";
+			String strpassfile = localfolder + "/" + passcmt + ".yml";
 			
 			File f1=new File(strprevfile);
 			File f2=new File(strpassfile);
@@ -175,11 +175,6 @@ public class TravisCIFileDownloader {
 			  if (f1!=null && f2!=null && f1.exists() && f2.exists()) {
 			  System.out.println(repourl + "==>" + prevcmt + "==>" + passcmt + "==>" +
 			  "Done"); }
-			 
-			/*
-			 * if ( f2!=null && f2.exists()) { System.out.println(repourl + "==>" + prevcmt
-			 * + "==>" + passcmt + "==>" + "Done"); }
-			 */
 			else
 			{
 				System.out.println("Uh oh");
@@ -211,22 +206,24 @@ public class TravisCIFileDownloader {
 				//String localfolder = repourl;//ProjectPropertyAnalyzer.getProjName(repourl);
 				//String reponame=ProjectPropertyAnalyzer.getProjRepoName(repourl);
 
-				String localrepo = Config.rootDir + item.getRepo();
+				String tempfolder = Config.rootDir + "temp";//item.getRepo();
 
-				File f = new File(localrepo);
+				File f = new File(tempfolder);
 
 				if (!f.exists()) {
 					f.mkdirs();
 				}
 
-				//String strprevfile = localrepo + "/" + "prev_travis_"+item.getCommit() + ".yml";
-				String strpassfile = localrepo + "/" + item.getCommit() + ".yml";
+				String strprevfile = tempfolder + "/" + "prev"+item.getCommit() + ".yml";
+				//System.out.println("Created "+strprevfile);
+				String strpassfile = tempfolder + "/" + item.getCommit() + ".yml";
+				//System.out.println("Created "+strpassfile);
 
-				//File ffail = new File(strprevfile);
+				File ffail = new File(strprevfile);
 				File fpass = new File(strpassfile);
 
-				if (!fpass.exists()) {
-					downloadPrevAndCurrTravisFiles(item.getRepo(),"prev_travis_"+item.getCommit(), item.getCommit());
+				if (!ffail.exists() && !fpass.exists()) {
+					downloadPrevAndCurrTravisFiles(item.getRepo(), item.getCommit());
 				}
 			//}
 
