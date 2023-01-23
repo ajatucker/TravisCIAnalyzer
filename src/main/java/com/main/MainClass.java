@@ -389,9 +389,9 @@ public class MainClass {
 			TravisCIFileDownloader dwnloader = new TravisCIFileDownloader();
 			dwnloader.downloadBeforeAndAfterCommitFiles();
 	   
-			TravisReportGenerator generate = new TravisReportGenerator();
-			generate.compareFiles("b3ae91c7e89644a73b9e9e44391d034bf746342f.yml", "prevb3ae91c7e89644a73b9e9e44391d034bf746342f.yml");
-			generate.getCommandMap();
+			//TravisReportGenerator generate = new TravisReportGenerator();
+			//generate.compareFiles("b3ae91c7e89644a73b9e9e44391d034bf746342f.yml", "prevb3ae91c7e89644a73b9e9e44391d034bf746342f.yml");
+			//generate.getCommandMap();
 		}
 
 	}

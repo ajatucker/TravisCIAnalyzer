@@ -6,6 +6,16 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.errors.IncorrectObjectTypeException;
+import org.eclipse.jgit.errors.MissingObjectException;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.ObjectLoader;
+import org.eclipse.jgit.lib.ObjectReader;
+import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.treewalk.TreeWalk;
 import org.kohsuke.github.GHBlob;
 import org.kohsuke.github.GHCommit;
 import org.kohsuke.github.GHRepository;
@@ -95,86 +105,131 @@ public class TravisCIFileDownloader {
 		}
 	}
 	
+	private String getFileContents(Repository repo, String cmt, boolean isParent) throws MissingObjectException, IncorrectObjectTypeException, IOException
+	{
+		String cmtstr = null;
+		RevWalk walk = new RevWalk(repo);
+		RevCommit commit;
+		ObjectId commitId = ObjectId.fromString(cmt);
+		if(isParent == false)
+		{
+			commit = walk.parseCommit(commitId);
+		}
+		else
+		{
+			RevCommit precommit = walk.parseCommit(commitId);
+			commit = walk.parseCommit(precommit.getParent(0));
+		}
+		//ObjectId commitId = ObjectId.fromString(cmt);
+		//RevCommit commit = walk.parseCommit(commitId);
+		//commit.
+		//@SuppressWarnings("resource")
+		TreeWalk treeWalk = new TreeWalk(repo);
+		treeWalk.addTree(commit.getTree());
+		treeWalk.setRecursive(false);
+		while (treeWalk.next()) {
+		    if (treeWalk.isSubtree()) {
+		        //System.out.println("dir: " + treeWalk.getPathString());
+		        treeWalk.enterSubtree();
+		    } else {
+		    	if(treeWalk.getPathString().contains("travis.yml"))
+		    	{
+		    		System.out.println("found!");
+		    		ObjectReader read = repo.newObjectReader();
+		    		ObjectLoader load = read.open(treeWalk.getObjectId(0));
+		    		cmtstr = new String(load.getBytes(), StandardCharsets.UTF_8);
+		    		break;
+		    	}
+		        //System.out.println("file: " + treeWalk.getPathString());
+		    }
+		}
+		
+		return cmtstr;
+	}
+	
 	private void downloadPrevAndCurrTravisFiles(String repourl, String passcmt) {
-		GHRepository repo;
+		Git git;
 		String prevcmt = "prev"+passcmt;
-		//String reponame = ProjectPropertyAnalyzer.getProjRepoName(repourl);
-		//String localfolder = ProjectPropertyAnalyzer.getProjName(repourl);
 		String passcmtstr = null;
 		String prevcmtstr = null;
 		CommitAnalyzingUtils commitAnalyzingUtils = new CommitAnalyzingUtils();
 		try {
-			String localrepo = Config.rootDir + repourl; 
+			String gitPath = Config.travisRepoDir+repourl+"/.git";
 			String localfolder = Config.rootDir + "temp";
-			//localfolder = localfolder.replace('/', '\\');
 			//this one gets repo name as input
-			repo = github.getRepository(repourl); //getting lost here??
-
-			GHCommit passcommit = repo.getCommit(passcmt);
+			git = Git.open(new File(gitPath));
+			Repository repo = git.getRepository();
 			
-
-			//String localrepo = Config.rootDir + repourl;
+			passcmtstr = getFileContents(repo, passcmt, false);
 			
-			  String strprevfile = localfolder + "/" + prevcmt + ".yml"; 
-			  List<GHCommit> prevcommit = passcommit.getParents();
-			  //if(prevcommit != null) { 
-			  GHTree prevtree = prevcommit.get(0).getTree();
-			  List<GHTreeEntry> prevghentry =prevtree.getTree();
-			  
-			  for (GHTreeEntry item : prevghentry) {
-				  if(item.getPath().contains("travis.yml")) 
-				  { 
-					  GHBlob pgblob = item.asBlob();
-					  InputStream prist = pgblob.read(); 
-					  prevcmtstr = new String(prist.readAllBytes(),StandardCharsets.UTF_8); 
-					  break; 
-					  } 
-			} 
-			 			
-			
-			GHTree passtree = passcommit.getTree();
-			List<GHTreeEntry> passghentry = passtree.getTree();
-			//GHTreeEntry prevItem = null;
-			for (GHTreeEntry item : passghentry) 
+			ObjectId currCommitId = ObjectId.fromString(passcmt);
+			RevWalk currWalk = new RevWalk(repo);
+			RevCommit currCommit = currWalk.parseCommit(currCommitId);
+			if(currCommit.getParent(0).getTree() == null)
 			{
-				if (item.getPath().contains("travis.yml")) 
-				{
-					GHBlob gblob = item.asBlob();
-					InputStream ist = gblob.read();
-					passcmtstr = new String(ist.readAllBytes(), StandardCharsets.UTF_8);
-					break;
-				}
+				prevcmtstr = new String("placeholder");
+			}
+			else
+			{
+				prevcmtstr = getFileContents(repo, passcmt, true);
 			}
 			
+			/*
+			 * RevWalk walk = new RevWalk(repo); ObjectId commitId =
+			 * ObjectId.fromString(passcmt); RevCommit commit = walk.parseCommit(commitId);
+			 * //commit. //@SuppressWarnings("resource") TreeWalk treeWalk = new
+			 * TreeWalk(repo); treeWalk.addTree(commit.getTree());
+			 * treeWalk.setRecursive(false); while (treeWalk.next()) { if
+			 * (treeWalk.isSubtree()) { //System.out.println("dir: " +
+			 * treeWalk.getPathString()); treeWalk.enterSubtree(); } else {
+			 * if(treeWalk.getPathString().contains("travis.yml")) {
+			 * System.out.println("found!"); ObjectReader read = repo.newObjectReader();
+			 * ObjectLoader load = read.open(treeWalk.getObjectId(0)); passcmtstr = new
+			 * String(load.getBytes(), StandardCharsets.UTF_8); }
+			 * //System.out.println("file: " + treeWalk.getPathString()); } }
+			 */
+			//GHCommit passcommit = repo.getCommit(passcmt);
 			
 			
-		
+				/*
+				 * List<GHCommit> prevcommit = passcommit.getParents(); //if(prevcommit != null)
+				 * { GHTree prevtree = prevcommit.get(0).getTree(); List<GHTreeEntry>
+				 * prevghentry =prevtree.getTree();
+				 * 
+				 * for (GHTreeEntry item : prevghentry) {
+				 * if(item.getPath().contains("travis.yml")) { GHBlob pgblob = item.asBlob();
+				 * InputStream prist = pgblob.read(); prevcmtstr = new
+				 * String(prist.readAllBytes(),StandardCharsets.UTF_8); break; } }
+				 */
+			 			
 			
+			/*
+			 * GHTree passtree = passcommit.getTree(); List<GHTreeEntry> passghentry =
+			 * passtree.getTree(); //GHTreeEntry prevItem = null; for (GHTreeEntry item :
+			 * passghentry) { if (item.getPath().contains("travis.yml")) { GHBlob gblob =
+			 * item.asBlob(); InputStream ist = gblob.read(); passcmtstr = new
+			 * String(ist.readAllBytes(), StandardCharsets.UTF_8); break; } }
+			 */
 			
-			 
-
-			//String localrepo = Config.rootDir + repourl;
-			//String strprevfile = localrepo + "/" + prevcmt + ".yml";
+			String strprevfile = localfolder + "/" + prevcmt + ".yml"; 
 			String strpassfile = localfolder + "/" + passcmt + ".yml";
 			
 			File f1=new File(strprevfile);
 			File f2=new File(strpassfile);
 			
 			
-			  if(!f1.exists()) 
-				  f1 =commitAnalyzingUtils.writeContentInFile(strprevfile,prevcmtstr);
-			 
-			 
-			
+			if(!f1.exists()) 
+			{				 
+				f1 = commitAnalyzingUtils.writeContentInFile(strprevfile, prevcmtstr);
+			}			
 			if(!f2.exists())
+			{				
 				f2 = commitAnalyzingUtils.writeContentInFile(strpassfile, passcmtstr);
-
-			
-			
-			
-			  if (f1!=null && f2!=null && f1.exists() && f2.exists()) {
-			  System.out.println(repourl + "==>" + prevcmt + "==>" + passcmt + "==>" +
-			  "Done"); }
+			}		
+			if (f1!=null && f2!=null && f1.exists() && f2.exists()) 
+			{
+			  System.out.println(repourl + "==>" + prevcmt + "==>" + passcmt + "==>" + "Done"); 
+			}
 			else
 			{
 				System.out.println("Uh oh");
