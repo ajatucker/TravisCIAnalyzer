@@ -17,7 +17,7 @@ import com.travisdiff.DecorateJSonTree;
 import com.travisdiff.TravisCITree;
 
 public class TravisReportGenerator {
-	private int count = 0;
+	private float count = 0;
 	private Map<String, Integer> commandMap;
 	private Map<String, Integer> simpleCommandMap;
 	
@@ -32,8 +32,8 @@ public class TravisReportGenerator {
 	{
 		for(Map.Entry<String, Integer> entry : simpleCommandMap.entrySet())
 		{
-			int percent = (entry.getValue()/count) * 100;
-			System.out.println(entry.getKey() + " appears " + entry.getValue() + "times " + ", so " + percent + "%");
+			float percent = (entry.getValue()/count) * 100;
+			System.out.println(entry.getKey() + " appears " + entry.getValue() + " times " + ", so " + percent + "%");
 		}
 	}
 	public TravisReportGenerator()
