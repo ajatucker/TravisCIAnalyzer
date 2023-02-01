@@ -29,6 +29,7 @@ import com.travisdiff.TravisCIChangeBlocks;
 import com.travisdiff.TravisCommitInfo;
 import com.travisdiff.TravisCommits;
 import com.utility.ProjectPropertyAnalyzer;
+import com.utility.TravisReportGenerator;
 
 import edu.util.fileprocess.CVSReader;
 
@@ -165,14 +166,14 @@ public class TravisCIFileDownloader {
 			ObjectId currCommitId = ObjectId.fromString(passcmt);
 			RevWalk currWalk = new RevWalk(repo);
 			RevCommit currCommit = currWalk.parseCommit(currCommitId);
-			if(currCommit.getParent(0).getTree() == null)
+			/*if(currCommit.getParent(0).getTree() == null)
 			{
-				prevcmtstr = new String("placeholder");
+				prevcmtstr = new String("placeholder:");
 			}
 			else
-			{
+			{*/
 				prevcmtstr = getFileContents(repo, passcmt, true);
-			}
+			//}
 			
 			/*
 			 * RevWalk walk = new RevWalk(repo); ObjectId commitId =
@@ -219,12 +220,26 @@ public class TravisCIFileDownloader {
 			
 			
 			if(!f1.exists()) 
-			{				 
-				f1 = commitAnalyzingUtils.writeContentInFile(strprevfile, prevcmtstr);
+			{	
+				if(prevcmtstr == null)
+				{
+					f1.createNewFile();
+				}
+				else
+				{					
+					f1 = commitAnalyzingUtils.writeContentInFile(strprevfile, prevcmtstr);
+				}
 			}			
 			if(!f2.exists())
-			{				
-				f2 = commitAnalyzingUtils.writeContentInFile(strpassfile, passcmtstr);
+			{	
+				if(passcmtstr == null)
+				{
+					f2.createNewFile();
+				}
+				else
+				{					
+					f2 = commitAnalyzingUtils.writeContentInFile(strpassfile, passcmtstr);
+				}
 			}		
 			if (f1!=null && f2!=null && f1.exists() && f2.exists()) 
 			{
@@ -241,7 +256,7 @@ public class TravisCIFileDownloader {
 		}
 	}
 	
-	public void downloadBeforeAndAfterCommitFiles() {
+	public void downloadBeforeAndAfterCommitFiles(TravisReportGenerator generate) {
 		List<TravisCommits> cmtlist = null;
 		CVSReader csvreader = new CVSReader();
 		try {
@@ -279,6 +294,10 @@ public class TravisCIFileDownloader {
 
 				if (!ffail.exists() && !fpass.exists()) {
 					downloadPrevAndCurrTravisFiles(item.getRepo(), item.getCommit());
+					//TravisReportGenerator generate = new TravisReportGenerator();
+					generate.compareFiles(strpassfile, strprevfile);
+					System.out.println("Mapping of repo " + item.getRepo() + " commit " + item.getCommit());
+					generate.getCommandMap();
 				}
 			//}
 

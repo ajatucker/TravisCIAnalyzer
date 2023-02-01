@@ -35,7 +35,7 @@ public class TravisCITree {
 			e1.printStackTrace();
 		}
 
-		String filename=Config.patchDir+"//"+"testj1.json";
+		String filename=Config.patchDir+"/"+"testj1.json";
 		
 		fwriter.writetoFile(filename, json);
 

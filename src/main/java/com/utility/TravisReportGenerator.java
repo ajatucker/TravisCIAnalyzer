@@ -17,21 +17,29 @@ import com.travisdiff.DecorateJSonTree;
 import com.travisdiff.TravisCITree;
 
 public class TravisReportGenerator {
-	//private int count;
-	@SuppressWarnings("unused")
+	private int count = 0;
 	private Map<String, Integer> commandMap;
+	private Map<String, Integer> simpleCommandMap;
 	
 	public void getCommandMap()
 	{
-		System.out.println("This is the map:");
 		for(Map.Entry<String, Integer> entry : commandMap.entrySet())
 		{
-			System.out.println(entry.getKey() + " : " + entry.getValue());
+			System.out.println(entry.getKey() + " - " + entry.getValue());
+		}
+	}
+	public void getStatistics()
+	{
+		for(Map.Entry<String, Integer> entry : simpleCommandMap.entrySet())
+		{
+			int percent = (entry.getValue()/count) * 100;
+			System.out.println(entry.getKey() + " appears " + entry.getValue() + "times " + ", so " + percent + "%");
 		}
 	}
 	public TravisReportGenerator()
 	{
 		commandMap = new HashMap<String, Integer>();
+		simpleCommandMap = new HashMap<String, Integer>();
 		//setCount(0);
 		//System.out.println("?");
 	}
@@ -39,9 +47,9 @@ public class TravisReportGenerator {
 	{
 		TravisCITree travistree = new TravisCITree();
 		ITree prevtree = travistree
-				.getTravisCITree(Config.rootDir+"temp/"+prev);
+				.getTravisCITree(prev); //Config.rootDir+"temp/"+
 		ITree curtree = travistree
-				.getTravisCITree(Config.rootDir+"temp/"+curr);
+				.getTravisCITree(curr); //Config.rootDir+"temp/"+
 		
 		//keep a map, count of lifecycle of travis then generate a report of all data
 
@@ -63,8 +71,17 @@ public class TravisReportGenerator {
 			strfield = strfield.replaceAll("\"", "");
 			System.out.println(strfield);
 			action.getNode().setMetadata("json_parent", strfield);
-			if(iter.hasNext() == true)
+			if(iter.hasNext() == true && strfield.contains("placeholder") == false)
 			{
+				if(simpleCommandMap.containsKey(strfield) == true)
+				{
+					simpleCommandMap.put(strfield, commandMap.get(strfield) + 1);
+				}
+				else
+				{
+					simpleCommandMap.put(strfield, 1);
+				}
+				count++;
 				Action nxtaction = iter.next(); 
 				String nextfield = decojson.getJsonField(nxtaction);
 				if(commandMap.containsKey(strfield+"->"+nextfield) == true)

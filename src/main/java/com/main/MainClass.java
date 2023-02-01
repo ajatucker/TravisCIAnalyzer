@@ -64,6 +64,7 @@ import com.unity.entity.CommandType;
 import com.unity.entity.EvaluationProject;
 import com.unity.entity.PerfFixData;
 import com.unity.repodownloader.ProjectLoader;
+//import com.utility.TravisReportGenerator;
 import com.utility.TravisReportGenerator;
 
 import edu.util.fileprocess.CSVReaderWriter;
@@ -385,13 +386,18 @@ public class MainClass {
 
 		} else if (inputid == 13) {
 			//dump travis files to temp folder pre/post commit
-			
+			TravisReportGenerator generate = new TravisReportGenerator();
 			TravisCIFileDownloader dwnloader = new TravisCIFileDownloader();
-			dwnloader.downloadBeforeAndAfterCommitFiles();
+			dwnloader.downloadBeforeAndAfterCommitFiles(generate);
+			System.out.println("This is a map of all statistics:");
+			generate.getStatistics();
 	   
-			//TravisReportGenerator generate = new TravisReportGenerator();
-			//generate.compareFiles("b3ae91c7e89644a73b9e9e44391d034bf746342f.yml", "prevb3ae91c7e89644a73b9e9e44391d034bf746342f.yml");
-			//generate.getCommandMap();
+			/*
+			 * TravisReportGenerator generate = new TravisReportGenerator();
+			 * generate.compareFiles("b3ae91c7e89644a73b9e9e44391d034bf746342f.yml",
+			 * "prevb3ae91c7e89644a73b9e9e44391d034bf746342f.yml");
+			 * generate.getCommandMap();
+			 */
 		}
 
 	}
