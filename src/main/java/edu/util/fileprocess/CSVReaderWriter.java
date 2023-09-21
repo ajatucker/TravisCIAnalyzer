@@ -3,23 +3,16 @@ package edu.util.fileprocess;
 import java.io.BufferedReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.Reader;
-import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
-import org.apache.commons.csv.CSVFormat;
-
-import com.helger.commons.csv.CSVParser;
-import com.opencsv.CSVWriter;
-import com.opencsv.bean.ColumnPositionMappingStrategy;
+import com.build.commitanalyzer.MLCommitDiffInfo;
 import com.opencsv.bean.CsvToBean;
 import com.opencsv.bean.CsvToBeanBuilder;
+import com.opencsv.bean.CsvToBeanFilter;
 import com.opencsv.bean.HeaderColumnNameMappingStrategy;
 import com.opencsv.bean.StatefulBeanToCsv;
 import com.opencsv.bean.StatefulBeanToCsvBuilder;
@@ -185,7 +178,7 @@ public class CSVReaderWriter {
 			HeaderColumnNameMappingStrategy<PerfFixData> strategy = new HeaderColumnNameMappingStrategy<>();
 			strategy.setType(PerfFixData.class);
 
-			CsvToBean csvToBean = new CsvToBeanBuilder(br).withType(PerfFixData.class).withMappingStrategy(strategy)
+			CsvToBean<PerfFixData> csvToBean = new CsvToBeanBuilder<PerfFixData>(br).withType(PerfFixData.class).withMappingStrategy(strategy)
 					.withIgnoreLeadingWhiteSpace(true).build();
 
 			data = csvToBean.parse();
@@ -206,7 +199,7 @@ public class CSVReaderWriter {
 			HeaderColumnNameMappingStrategy<CommandType> strategy = new HeaderColumnNameMappingStrategy<>();
 			strategy.setType(CommandType.class);
 
-			CsvToBean csvToBean = new CsvToBeanBuilder(br).withType(CommandType.class).withMappingStrategy(strategy)
+			CsvToBean<CommandType> csvToBean = new CsvToBeanBuilder<CommandType>(br).withType(CommandType.class).withMappingStrategy(strategy)
 					.withIgnoreLeadingWhiteSpace(true).build();
 
 			data = csvToBean.parse();
@@ -214,6 +207,65 @@ public class CSVReaderWriter {
 		}
 
 		return data;
+	}
+	
+	public List<MLCommitDiffInfo> getMLCommitDiffInfoFromCSV(String strpath) throws Exception {
+
+		List<MLCommitDiffInfo> data = null;
+
+		Path path = Paths.get(strpath);
+
+		try (BufferedReader br = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
+
+			HeaderColumnNameMappingStrategy<MLCommitDiffInfo> strategy = new HeaderColumnNameMappingStrategy<>();
+
+			strategy.setType(MLCommitDiffInfo.class);
+			
+			CsvToBean<MLCommitDiffInfo> csvToBean = new CsvToBeanBuilder<MLCommitDiffInfo>(br).withType(MLCommitDiffInfo.class)
+					.withMappingStrategy(strategy).withIgnoreLeadingWhiteSpace(true).withFilter(new CsvToBeanFilter() {
+						@Override
+						public boolean allowLine(String[] line) {
+							for (String one : line) {
+				                if (one != null && one.length() > 0) {
+				                    return true;
+				                }
+				            }
+				            return false;
+						}
+						
+					}).build();
+
+			data = csvToBean.parse();
+
+		}
+
+		return data;
+	}
+	
+	/**Input data is not actually processed here, only used to extract header for mapping strategy.<br><br>
+	 * When reading the outputted data, the quote character escaped with another quote. This is a standard for CSV, though Excel seems to not support it.*/
+	public void writeMLDiffBeanToFile(List<MLCommitDiffInfo> fixdata, String outputDataPath)
+			throws IOException, CsvDataTypeMismatchException, CsvRequiredFieldEmptyException {
+
+		try {
+			// Creating writer class to generate
+			// csv file
+			FileWriter writer = new FileWriter(outputDataPath);
+
+			
+			SetOrderHeaderMappingStrategy<MLCommitDiffInfo> strategy = new SetOrderHeaderMappingStrategy<>(MLCommitDiffInfo.class);
+			System.out.println(strategy.generateHeader());
+			
+			StatefulBeanToCsvBuilder<MLCommitDiffInfo> builder = new StatefulBeanToCsvBuilder<MLCommitDiffInfo>(writer).withEscapechar('"');
+			StatefulBeanToCsv<MLCommitDiffInfo> beanWriter = builder.withMappingStrategy(strategy).build();
+
+			beanWriter.write(fixdata);
+			writer.close();
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
 	}
 	
 	public <T> void writeBeanToFile(List<T> fixdata, String csvfilepath)
@@ -274,7 +326,7 @@ public class CSVReaderWriter {
 			HeaderColumnNameMappingStrategy<T> strategy = new HeaderColumnNameMappingStrategy<>();
 			strategy.setType(neededClass);
 
-			CsvToBean csvToBean = new CsvToBeanBuilder(br).withType(neededClass).withMappingStrategy(strategy)
+			CsvToBean<T> csvToBean = new CsvToBeanBuilder<T>(br).withType(neededClass).withMappingStrategy(strategy)
 					.withIgnoreLeadingWhiteSpace(true).build();
 
 			data = csvToBean.parse();
@@ -298,7 +350,7 @@ public class CSVReaderWriter {
 			HeaderColumnNameMappingStrategy<TravisCommitInfo> strategy = new HeaderColumnNameMappingStrategy<>();
 			strategy.setType(TravisCommitInfo.class);
 
-			CsvToBean csvToBean = new CsvToBeanBuilder(br).withType(TravisCommitInfo.class).withMappingStrategy(strategy)
+			CsvToBean<TravisCommitInfo> csvToBean = new CsvToBeanBuilder<TravisCommitInfo>(br).withType(TravisCommitInfo.class).withMappingStrategy(strategy)
 					.withIgnoreLeadingWhiteSpace(true).build();
 
 			data = csvToBean.parse();

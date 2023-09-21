@@ -42,7 +42,7 @@ public class BashCmdAnalysis {
 		
 		if(s.contains("travis_wait"))
 		{
-			Pattern pattern = Pattern.compile("(travis_wait)(\s+)(\\d+)", Pattern.CASE_INSENSITIVE);
+			Pattern pattern = Pattern.compile("(travis_wait)(\\s+)(\\d+)", Pattern.CASE_INSENSITIVE);
 			Matcher matcher = pattern.matcher(s); 
 		    s = matcher.replaceAll("");		
 		}
@@ -106,7 +106,7 @@ public class BashCmdAnalysis {
 		
 		if(s.contains("travis_wait"))
 		{
-			Pattern pattern = Pattern.compile("(travis_wait)(\s+)(\\d+)", Pattern.CASE_INSENSITIVE);
+			Pattern pattern = Pattern.compile("(travis_wait)(\\s+)(\\d+)", Pattern.CASE_INSENSITIVE);
 			Matcher matcher = pattern.matcher(s); 
 		    s = matcher.replaceAll("");		
 		}
@@ -168,7 +168,7 @@ public class BashCmdAnalysis {
 		
 		if(s.contains("travis_wait"))
 		{
-			Pattern pattern = Pattern.compile("(travis_wait)(\s+)(\\d+)", Pattern.CASE_INSENSITIVE);
+			Pattern pattern = Pattern.compile("(travis_wait)(\\s+)(\\d+)", Pattern.CASE_INSENSITIVE);
 			Matcher matcher = pattern.matcher(s); 
 		    s = matcher.replaceAll("");		
 		}

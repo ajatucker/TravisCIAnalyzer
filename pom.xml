@@ -125,8 +125,11 @@
 			<artifactId>spoon-core</artifactId>
 			<version>5.4.0</version>
 		</dependency>
-		<!-- <dependency> <groupId>fr.inria.gforge.spoon.labs</groupId> <artifactId>gumtree-spoon-ast-diff</artifactId> 
-			<version>1.0.0</version> </dependency> -->
+		<dependency> 
+			<groupId>fr.inria.gforge.spoon.labs</groupId>
+			<artifactId>gumtree-spoon-ast-diff</artifactId> 
+			<version>1.0.0</version>
+		</dependency>
 		<dependency>
 			<groupId>com.jcabi</groupId>
 			<artifactId>jcabi-github</artifactId>

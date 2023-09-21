@@ -1,68 +1,47 @@
 package com.main;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Scanner;
 
-import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.ObjectLoader;
-import org.eclipse.jgit.lib.ObjectReader;
-import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevTree;
-import org.eclipse.jgit.revwalk.RevWalk;
-import org.eclipse.jgit.treewalk.TreeWalk;
-import org.eclipse.jgit.treewalk.filter.PathFilter;
+import org.assimbly.docconverter.DocConverter;
 
 import com.TravisCIClient.TravisCIFileDownloader;
-import com.build.statement.StatementPatchXmlReader;
-import com.build.statement.StatementSimilarityMngr;
-import com.commit.analysis.CommitFileTypeAnalysisMngr;
+import com.build.commitanalyzer.CommitAnalyzer;
+import com.build.commitanalyzer.MLCommitDiffInfo;
 import com.config.Config;
-import com.csharp.changesize.ChangeSizeAnalyzer;
-import com.csharp.diff.CSharpDiffGenMngr;
 import com.evaluation.CalculateEvaluation;
 import com.github.gumtreediff.actions.EditScript;
 import com.github.gumtreediff.actions.EditScriptGenerator;
 import com.github.gumtreediff.actions.SimplifiedChawatheScriptGenerator;
 import com.github.gumtreediff.actions.model.Action;
-import com.github.gumtreediff.matchers.CompositeMatchers;
 import com.github.gumtreediff.matchers.MappingStore;
 import com.github.gumtreediff.matchers.Matcher;
 import com.github.gumtreediff.matchers.Matchers;
 import com.github.gumtreediff.tree.ITree;
-import com.github.gumtreediff.tree.TreeUtils;
-import com.travis.parser.BashCmdAnalysis;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.python.parser.PythonFileParser;
 import com.travis.parser.CmdClustering;
 import com.travis.parser.CommandFrequency;
 import com.travis.parser.ProjectCommand;
-import com.travis.parser.TrvaisYamlFileParser;
+import com.travis.parser.TravisYamlFileParser;
 import com.travis.task.TaskAnalyzer;
 import com.travis.task.ToolAdoption;
 import com.travisdiff.DecorateJSonTree;
 import com.travisdiff.TravisCIDiffGenMngr;
 import com.travisdiff.TravisCITree;
-import com.unity.callgraph.CallGraphBasedDistinctFuncAnalyzer;
-import com.unity.callgraph.CallGraphBasedFuncAnalyzer;
-import com.unity.callgraph.CallGraphBasedFuncFixCommit;
-import com.unity.callgraph.UserDefinedCallAnalysis;
-import com.unity.commitanalyzer.CommitAnalysisMngr;
-import com.unity.entity.CommandType;
 import com.unity.entity.EvaluationProject;
-import com.unity.entity.PerfFixData;
 import com.unity.repodownloader.ProjectLoader;
 
 import edu.util.fileprocess.CSVReaderWriter;
@@ -86,13 +65,13 @@ public class MainClass {
 				+ "\n10->RQ2->Build Block Analysis"
 				+ "\n11->RQ2->Build Pattern Analysis"
 				+ "\n12->-----"
-				+ "\n13->Generate Report of Commits");
+				+ "\n13->Generate Report of Commits"
+				+ "\n14->Compute Python+Travis ASTs and Travis line-of-code changes");
 
 		Scanner cin = new Scanner(System.in);
 
 		System.out.println("Enter an integer: ");
 		int inputid = cin.nextInt();
-
 		if (inputid == 1) {
 			ProjectLoader projloader = new ProjectLoader();
 			projloader.LoadDownloadProjects();
@@ -100,7 +79,7 @@ public class MainClass {
 
 		} 
 		else if (inputid == 2) {
-			TrvaisYamlFileParser parser = new TrvaisYamlFileParser();
+			TravisYamlFileParser parser = new TravisYamlFileParser();
 			CmdClustering cmdcluster = new CmdClustering();
 
 			try {				
@@ -329,7 +308,7 @@ public class MainClass {
 			TravisCIDiffGenMngr diffmngr = new TravisCIDiffGenMngr();
 			diffmngr.generateTravisCIFailFixChangeDataStat();
 		} else if (inputid == 10) {
-			TrvaisYamlFileParser fileparser = new TrvaisYamlFileParser();
+			TravisYamlFileParser fileparser = new TravisYamlFileParser();
 
 			LinkedHashMap<String, Integer> blocksstat = fileparser.getProjectBlockStatus();
 
@@ -343,7 +322,7 @@ public class MainClass {
 			TaskAnalyzer analyzer = new TaskAnalyzer();
 			List<ToolAdoption> tooladoplist = analyzer.getTravisToolAdoptionWithType();
 		} else if (inputid == 12) {
-			TrvaisYamlFileParser parser = new TrvaisYamlFileParser();
+			TravisYamlFileParser parser = new TravisYamlFileParser();
 			CmdClustering cmdcluster = new CmdClustering();
 
 			try {				
@@ -461,6 +440,149 @@ public class MainClass {
 			}
 
 			System.out.println("Post-print new test");
+		}
+		else if(inputid == 14) {
+			int pythonFileLimit = Config.maxPythonFiles; //Any commit changing more python files than this will be immediately be skipped
+			//To not remove large commits, simply set to Integer.MAX_VALUE
+			File outputFolder = new File(Config.rootDir + "Output");
+
+			String csvPath = Config.rootDir + "ML-SampledCommitsFrom-PythonProjects.csv";
+			String outputPath = outputFolder.getAbsolutePath() + File.separator + "ML-SampledCommitsFrom-PythonProjects_Output.csv";
+			
+			//PythonParser must be installed for this
+			if(!System.getenv("PATH").contains("pythonparser")) {
+				if(System.getProperty("gt.pp.path") == null) {
+					System.err.println("Python parser not included in -Dgp.pp.path= argument or PATH system environment variable! Cannot analyze python ML projects.\n"
+							+ "Install Python if needed, and GumTreeDiff\\pythonparser, from GitHub and pass here");
+					return;
+				}
+				String s = System.getProperty("gt.pp.path");
+				File f = new File(s.startsWith("\"") ? s.substring(1, s.length()-1) : s); //trim quotes or this is workingDir\"pythonParserAbsolutePath"
+				if(!f.exists()) {
+					System.err.println("PythonParser not on PATH, and not installed at the specified location!");
+					System.err.println(f.getAbsolutePath());
+					return;
+				}
+			}
+			
+			if(!outputFolder.exists())
+				outputFolder.mkdirs();
+			
+			//Clean up the temp files from possible interrupted runs
+			//try {
+			//	Files.deleteIfExists(Path.of(Config.rootDir, "new_python.py"));
+			//	Files.deleteIfExists(Path.of(Config.rootDir, "old_python.py"));
+			//	Files.deleteIfExists(Path.of(Config.rootDir, "new_travis.yml"));
+			//	Files.deleteIfExists(Path.of(Config.rootDir, "new_travis.yml"));
+			//} catch (IOException e) {
+			//	// TODO Auto-generated catch block
+			//	e.printStackTrace();
+			//}
+			
+		
+			
+			CSVReaderWriter readWrite = new CSVReaderWriter();
+			try {
+				List<MLCommitDiffInfo> diffInfos = readWrite.getMLCommitDiffInfoFromCSV(csvPath);
+				PythonFileParser pyParser = new PythonFileParser();
+				//Clear log for python AST
+				String pyLogPath = Config.rootDir + "python_errors.log";
+				File pyLogFile = new File(pyLogPath);
+				if(pyLogFile.exists())
+					pyLogFile.delete();
+				pyLogFile.createNewFile();
+				//Iterate across CSV lines
+				for(MLCommitDiffInfo diffInfo : diffInfos) {
+					String commitOutputFolder = outputFolder.getAbsolutePath() + File.separator + diffInfo.getProjName().replace("/", File.separator) + File.separator + diffInfo.getCommitID();
+					new File(commitOutputFolder).mkdirs();
+					boolean travisModified = false;
+					loop: for(String name : diffInfo.getModifiedFiles()) { //check for travis change
+						if(name.contains(".travis.yml")) {
+							travisModified = true;
+							break loop;
+						}
+					}
+					int pythonFilesModified = 0;
+					for(String fileName : diffInfo.getModifiedFiles()) {
+						if(fileName.endsWith(".py"))
+							pythonFilesModified++;
+						if(pythonFilesModified > pythonFileLimit)
+							break;
+					}
+					if(pythonFilesModified >= pythonFileLimit)
+						System.out.println(diffInfo.getProjName() + ":" + diffInfo.getCommitID() + "; Too many python files: " + pythonFilesModified);
+					if(pythonFilesModified == 0)
+						System.out.println(diffInfo.getProjName() + ":" + diffInfo.getCommitID() + "; No python files modified");
+					if(!travisModified)
+						System.out.println(diffInfo.getProjName() + ":" + diffInfo.getCommitID() + "; travis.yml not modified");
+					if(travisModified && pythonFilesModified > 0 && pythonFilesModified < pythonFileLimit) {
+						String projName = diffInfo.getProjName();
+						String projUrl = "https://github.com/" + projName + ".git";
+						String projFolderName = projName.substring(projName.indexOf("/") + 1);
+						String projAuthorName = projName.substring(0, projName.indexOf("/"));
+						CommitAnalyzer analyzer = new CommitAnalyzer(projAuthorName, projFolderName, projUrl);
+						File file = CommitAnalyzer.getCloneLocation(projFolderName);
+						if(!file.exists()) {
+							System.out.println("Starting clone to " + file.getAbsolutePath());
+							analyzer.cloneRepository(projFolderName);
+							System.out.println("Clone complete");
+						}else{
+							System.out.println(file.getAbsolutePath() + " already exists!");
+							System.out.println("Already cloned, skipping cloning");
+						}
+						//analyzer.checkOutAtSpecificCommitID(diffInfo.getCommitID());
+						//System.out.println("Checkout complete");
+						int[] result = analyzer.getLoCChange(diffInfo.getCommitID());
+						if(result != null) {
+							diffInfo.setLinesAdded(result[0]);
+							diffInfo.setLinesRemoved(result[1]);
+							diffInfo.setLinesModified(result[2]);
+							System.out.println(projName + " " + Arrays.toString(result));
+						}
+						if(result != null && result[2] != 0) {
+							TravisYamlFileParser.EditResults results = analyzer.getYamlFileChangeAST(diffInfo.getCommitID(), ".travis.yml");
+							if(results != null) {
+								String astStr = TravisYamlFileParser.getYamlDiffStr(results);
+								Gson gson = new GsonBuilder().setPrettyPrinting().create();
+								String miniJson = gson.toJson(gson.fromJson(astStr, JsonElement.class)); //minified json string
+								String travisOutputPath = commitOutputFolder + File.separator + "travis_diff.json";
+								diffInfo.setTravisAstDiffStr(travisOutputPath);
+								DocConverter.convertStringToFile(travisOutputPath, miniJson);
+							}
+						}
+						//Python AST
+						PythonFileParser.EditResults[] pyResults = analyzer.getPythonDiffAST(diffInfo.getCommitID());
+						if(pyResults != null) {
+							diffInfo.setPythonFilesChanged(pyResults.length);
+							//Put all the file results into one object
+							GsonBuilder gsonB = new GsonBuilder();
+							Gson gson = gsonB.setPrettyPrinting().create();
+							JsonObject jsonObj = new JsonObject(); //use to take in the json for each tree, put them together, and write to a string
+							for(int i = 0; i < pyResults.length; i++) {
+								String jsonStr = PythonFileParser.getPythonDiffString(pyResults[i]);
+								jsonObj.add(pyResults[i].fileName, gson.fromJson(jsonStr, JsonElement.class));
+							}
+							//System.out.println("Json:");
+							//System.out.println(jsonObj.toString());
+							String miniJson = gson.toJson(jsonObj);
+							String pythonOutputPath = commitOutputFolder + File.separator + "python_diff.json";
+							diffInfo.setPythonAstDiffStr(pythonOutputPath);
+							DocConverter.convertStringToFile(pythonOutputPath, miniJson);
+							
+						}else {
+							System.out.println("Results were null");
+						}
+					}
+				}
+				File outputFile = new File(outputPath);
+				if(!outputFile.exists())
+					outputFile.createNewFile();
+				readWrite.writeMLDiffBeanToFile(diffInfos, outputPath);
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
 		}
 
 	}

@@ -12,7 +12,7 @@ import com.travis.parser.BashCmdAnalysis;
 import com.travis.parser.CmdClustering;
 import com.travis.parser.CommandFrequency;
 import com.travis.parser.ProjectCommand;
-import com.travis.parser.TrvaisYamlFileParser;
+import com.travis.parser.TravisYamlFileParser;
 import com.unity.entity.CommandType;
 import com.unity.entity.FrequencyEntity;
 import com.unity.entity.PerfFixData;
@@ -25,7 +25,7 @@ import edu.util.fileprocess.TextFileReaderWriter;
 public class TaskAnalyzer {
 
 	public List<ToolAdoption> getTravisToolAdoption(boolean isevalproj) {
-		TrvaisYamlFileParser parser = new TrvaisYamlFileParser();
+		TravisYamlFileParser parser = new TravisYamlFileParser();
 		CVSReader csvrw = new CVSReader();
 		List<ToolAdoption> tooladoplist = null;
 		try {
@@ -434,7 +434,7 @@ public class TaskAnalyzer {
 	}
 
 	public List<ToolAdoption> getTravisToolAdoptionWithType() {
-		TrvaisYamlFileParser parser = new TrvaisYamlFileParser();
+		TravisYamlFileParser parser = new TravisYamlFileParser();
 		CVSReader csvrw = new CVSReader();
 		List<ToolAdoption> tooladoplist = null;
 		try {
@@ -490,7 +490,7 @@ public class TaskAnalyzer {
 			boolean depstatus = projdeps.get(index).getDeploymentStatus();
 
 			if (depstatus) {
-				TrvaisYamlFileParser parser = new TrvaisYamlFileParser();
+				TravisYamlFileParser parser = new TravisYamlFileParser();
 				String service = parser.getDeploymentStat(projname);
 
 				if(service.equals("releases"))
